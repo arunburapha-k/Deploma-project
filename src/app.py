@@ -12,7 +12,7 @@ SRC_DIR = os.path.dirname(os.path.abspath(__file__))
 STORAGE_DIR = os.path.dirname(SRC_DIR)
 MODEL_DIR = os.path.join(STORAGE_DIR, "models")
 
-TFLITE_MODEL = os.path.join(MODEL_DIR, "model_fp32.tflite")
+TFLITE_MODEL = os.path.join(MODEL_DIR, "model_fp16.tflite")
 LABEL_MAP_PATH = os.path.join(MODEL_DIR, "label_map.json")
 THRESH_PATH = os.path.join(MODEL_DIR, "thresholds.json")
 

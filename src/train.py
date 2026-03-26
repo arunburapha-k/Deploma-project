@@ -33,17 +33,17 @@ from tensorflow.keras.callbacks import (
 EXPERIMENT_NAME = "bi-gru-v1.2.4"
 RNN_TYPE = "gru"
 
-# --- FIXED HYPERPARAMETERS (🔥 ปรับลดขนาดสมองตาม Requirement 5) ---
-CONV_FILTERS = 128     # คงไว้เท่าเดิม ประหยัดแบตเตอรี่ตอนกรองข้อมูล
+CONV_FILTERS = 64    
 CONV_KERNEL = 3       
-RNN_UNITS = 64        # 🔥 เพิ่มความจำ (จาก 32 -> 64) คุ้มมาก!
-DENSE_UNITS1 = 32     # คงไว้ ป้องกันสมองบวมท้ายๆ
+RNN_UNITS = 64       
+DENSE_UNITS1 = 64
+BATCH_SIZE = 64
+
 SPATIAL_DROPOUT_RATE = 0.5
 DROPOUT_RATE = 0.5
 
 LEARNING_RATE = 1e-3 
-NUM_EPOCHS = 300       # 🔥 แนะนำให้เพิ่ม Epoch เพราะโมเดลสมองใหญ่ขึ้น ต้องใช้เวลาเทรนขึ้นอีกนิด
-BATCH_SIZE = 128
+NUM_EPOCHS = 300    
 
 # class balancing
 USE_BALANCED_SAMPLING = True
@@ -79,10 +79,10 @@ actions = np.array(
     ]
 )
 
-SEED = 42
-np.random.seed(SEED)
-random.seed(SEED)
-tf.random.set_seed(SEED)
+RANDOM_SEED = 42
+np.random.seed(RANDOM_SEED)
+random.seed(RANDOM_SEED)
+tf.random.set_seed(RANDOM_SEED)
 
 
 # ---------------- 2) Helper Functions (โหลดข้อมูล) ----------------
@@ -160,7 +160,7 @@ def build_model():
         kernel_size=CONV_KERNEL,
         activation="relu",
         padding="same",
-        kernel_regularizer=regularizers.l2(0.001),
+        kernel_regularizer=regularizers.l2(0.002),
         name="conv1d_feature",
     )(x)
     x = BatchNormalization(name="batch_norm")(x)
@@ -178,7 +178,7 @@ def build_model():
     x = Dense(
         DENSE_UNITS1,
         activation="relu",
-        kernel_regularizer=regularizers.l2(0.001),
+        kernel_regularizer=regularizers.l2(0.002),
         name="dense_hidden",
     )(x)
     x = Dropout(DROPOUT_RATE, name="dropout_final")(x)

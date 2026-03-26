@@ -50,17 +50,22 @@ assert FEATURE_TOTAL == FEAT_DIM, f"FEAT_DIM ต้องเท่ากับ {
 # ==========================================================
 # Config (Safe Mode: ป้องกันพิกัดระเบิดและรักษารูปทรงกายวิภาค)
 # ==========================================================
-NOISE_STD = 0.02          
-MAX_SHIFT_FRAMES = 3      
-JOINT_DROP_PROB = 0.05    
-SCALE_RANGE = (0.80, 1.20)
-TRANSLATE_STD = 0.03      
 
-TIME_WARP_RANGE = (0.85, 1.15) 
-PARTIAL_KEEP_RANGE = (0.85, 0.95) 
+# 1. Spatial Perturbations (การรบกวนเชิงพื้นที่)
+NOISE_STD = 0.01          # ลดจาก 0.02 -> 0.01: รักษารูปแบบการ "สั่น (Fever)" หรือ "เกา (Itching)" ไม่ให้โดน Noise กลบ
+TRANSLATE_STD = 0.05      # เพิ่มจาก 0.03 -> 0.05: จำลองกรณีผู้ป่วยนอนขอบเตียง หรือยืนไม่ตรงกลางกล้อง (Robustness)
+SCALE_RANGE = (0.80, 1.20)# คงเดิม: ครอบคลุมกรณีผู้ป่วยอยู่ใกล้/ไกลกล้อง 20%
+JOINT_DROP_PROB = 0.02    # ลดจาก 0.05 -> 0.02: ป้องกันนิ้วแหว่งจนดูไม่ออกว่ากำลังกุมท้อง (Pain) หรือจับคอ (Suffocated)
+
+# 2. Temporal Perturbations (การรบกวนเชิงเวลา)
+MAX_SHIFT_FRAMES = 3      # คงเดิม: (10% ของ 30 เฟรม) เลื่อนจุดเริ่มต้นคลิปเล็กน้อย
+TIME_WARP_RANGE = (0.80, 1.20) # ขยายจาก 0.85-1.15: เพิ่มความหลากหลายของความเร็ว (คนหนุ่มทำท่าเร็ว / คนสูงอายุทำท่าช้า)
+PARTIAL_KEEP_RANGE = (0.85, 0.95) # คงเดิม: ตัดหัวท้ายคลิปออกเล็กน้อย บังคับให้ AI ดูแอคชันตรงกลาง
+
+# 3. Real-world Camera Simulations (จำลองสภาพกล้องมือถือ)
 PREFIX_MAX_FRAMES = 2     
 SUFFIX_MAX_FRAMES = 2     
-LOW_FPS_DROP_RATE = 0.3   
+LOW_FPS_DROP_RATE = 0.3   # คงเดิม: (หัวใจสำคัญ!) จำลองกล้องมือถือราคาถูก หรือสภาวะแสงน้อยในห้องนอน (Insomnia) ที่เฟรมเรตกล้องจะตก
 NO_ACTION_CLASS_NAME = "no_action"
 
 random.seed(RANDOM_SEED)

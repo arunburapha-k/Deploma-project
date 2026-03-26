@@ -29,20 +29,16 @@ FEAT_DIM = 258
 MAX_CORES = 6  # 🔥 บังคับใช้ 6 Cores 
 
 actions = [
-    # "anxiety",
-    # "fever",
-    # "feverish",
-    # "insomnia",
-    # "itching",
-    # "no_action",
-    # "pain",
-    # "polyuria",
-    # "suffocated",
-    # "wounded"
-    "fever_p",
-    # "feverish_p",
-    # "no_action_p",
-    # "polyuria_p"
+    "anxiety",
+    "fever",
+    "feverish",
+    "insomnia",
+    "itching",
+    "no_action",
+    "pain",
+    "polyuria",
+    "suffocated",
+    "wounded"
 ]
 
 # =====================================================================
