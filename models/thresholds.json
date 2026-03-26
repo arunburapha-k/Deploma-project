@@ -1,0 +1,42 @@
+{
+    "anxiety": {
+        "threshold": 0.3,
+        "f1": 1.0
+    },
+    "fever": {
+        "threshold": 0.3,
+        "f1": 1.0
+    },
+    "feverish": {
+        "threshold": 0.3,
+        "f1": 1.0
+    },
+    "insomnia": {
+        "threshold": 0.3,
+        "f1": 1.0
+    },
+    "itching": {
+        "threshold": 0.3,
+        "f1": 1.0
+    },
+    "no_action": {
+        "threshold": 0.3,
+        "f1": 1.0
+    },
+    "pain": {
+        "threshold": 0.3,
+        "f1": 1.0
+    },
+    "polyuria": {
+        "threshold": 0.3,
+        "f1": 1.0
+    },
+    "suffocated": {
+        "threshold": 0.3,
+        "f1": 1.0
+    },
+    "wounded": {
+        "threshold": 0.3,
+        "f1": 1.0
+    }
+}
