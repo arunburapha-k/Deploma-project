@@ -23,10 +23,6 @@
         "threshold": 0.3,
         "f1": 1.0
     },
-    "pain": {
-        "threshold": 0.3,
-        "f1": 1.0
-    },
     "polyuria": {
         "threshold": 0.3,
         "f1": 1.0

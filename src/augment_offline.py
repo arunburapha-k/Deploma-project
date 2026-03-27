@@ -1,16 +1,3 @@
-"""
-augment_offline.py (Version: 258 Features)
-
-สคริปต์สำหรับทำ Offline Data Augmentation
-เฉพาะ train set (เช่น data/processed_train)
-
-⚠️ เวอร์ชันนี้ถูกปรับให้ตรงกับโครงสร้างฟีเจอร์ที่มี Z กลับมาแล้ว:
-    - Pose   : 33 จุด × 4 ค่า (x, y, z, visibility) = 132
-    - L-Hand : 21 จุด × 3 ค่า (x, y, z)           = 63
-    - R-Hand : 21 จุด × 3 ค่า (x, y, z)           = 63
-    รวมทั้งหมด                                  = 258 ค่า ต่อเฟรม
-"""
-
 import os
 import numpy as np
 import random
@@ -45,6 +32,7 @@ RH_START = LH_START + LH_SIZE  # 195
 RH_SIZE = HAND_LM * HAND_DIM  # 63
 FEATURE_TOTAL = POSE_SIZE + LH_SIZE + RH_SIZE
 
+
 assert FEATURE_TOTAL == FEAT_DIM, f"FEAT_DIM ต้องเท่ากับ {FEATURE_TOTAL} (Pose132+LH63+RH63)"
 
 # ==========================================================
@@ -68,6 +56,15 @@ SUFFIX_MAX_FRAMES = 2
 LOW_FPS_DROP_RATE = 0.3   # คงเดิม: (หัวใจสำคัญ!) จำลองกล้องมือถือราคาถูก หรือสภาวะแสงน้อยในห้องนอน (Insomnia) ที่เฟรมเรตกล้องจะตก
 NO_ACTION_CLASS_NAME = "no_action"
 
+PREFIX_MAX_FRAMES = 2     
+SUFFIX_MAX_FRAMES = 2     
+LOW_FPS_DROP_RATE = 0.3   
+NO_ACTION_CLASS_NAME = "no_action"
+
+MAX_YAW_DEG = 15.0        # มุมหมุนแกน Y สูงสุด (องศา)
+MAX_MASK_FRAMES = 5       # จำนวนเฟรมสูงสุดที่กล้องจะค้าง
+TRACKING_LOSS_PROB = 0.05  # โอกาสที่ MediaPipe จะทำมือหายในแต่ละเฟรม
+
 random.seed(RANDOM_SEED)
 np.random.seed(RANDOM_SEED)
 
@@ -85,25 +82,14 @@ RH_X_IDX = RH_START + np.arange(0, RH_SIZE, 3)
 RH_Y_IDX = RH_START + np.arange(1, RH_SIZE, 3)
 RH_Z_IDX = RH_START + np.arange(2, RH_SIZE, 3)
 
-# Pair สำหรับ Flip สลับซ้ายขวา
-POSE_FLIP_PAIRS = np.array([
-    (1, 4), (2, 5), (3, 6), (7, 8), (9, 10),
-    (11, 12), (13, 14), (15, 16),
-    (17, 18), (19, 20), (21, 22),
-    (23, 24), (25, 26), (27, 28), (29, 30), (31, 32)
-])
-POSE_FLIP_INDICES = []
-for l_idx, r_idx in POSE_FLIP_PAIRS:
-    for d in range(POSE_DIM): 
-        POSE_FLIP_INDICES.append((l_idx * POSE_DIM + d, r_idx * POSE_DIM + d))
-
-
+ALL_X_IDX = np.concatenate([POSE_X_IDX, LH_X_IDX, RH_X_IDX])
+ALL_Z_IDX = np.concatenate([POSE_Z_IDX, LH_Z_IDX, RH_Z_IDX])
 # ================== UTILITIES ==================
 
 def is_augmented_filename(fname: str) -> bool:
     name, ext = os.path.splitext(fname)
     if ext != ".npy": return True
-    suffixes = ["_flip", "_noise1", "_tshift", "_drop", "_st", "_tw", "_ps", "_psna", "_lowfps"]
+    suffixes = ["_flip", "_noise1", "_tshift", "_drop", "_st", "_tw", "_ps", "_psna", "_lowfps", "_yaw", "_mask", "_tkloss"]
     return any(name.endswith(suf) for suf in suffixes)
 
 def load_no_action_pool(train_dir: str, class_name: str = "no_action"):
@@ -282,6 +268,65 @@ def simulate_low_fps(seq: np.ndarray, drop_rate: float = LOW_FPS_DROP_RATE) -> n
             new_seq[t] = new_seq[t-1]
     return new_seq
 
+def simulate_camera_yaw(seq: np.ndarray, max_angle_deg: float = MAX_YAW_DEG) -> np.ndarray:
+    """จำลองกล้องเอียงซ้าย/ขวา (Rotation around Y-axis)"""
+    rotated_seq = seq.copy()
+    
+    # สุ่มมุมหมุน (แปลงเป็น radians)
+    theta = np.radians(np.random.uniform(-max_angle_deg, max_angle_deg))
+    cos_t = np.cos(theta)
+    sin_t = np.sin(theta)
+    
+    # ดึงค่า X และ Z ออกมา
+    X = rotated_seq[:, ALL_X_IDX]
+    Z = rotated_seq[:, ALL_Z_IDX]
+    
+    # คำนวณ 3D Rotation Matrix R_y
+    X_new = X * cos_t + Z * sin_t
+    Z_new = -X * sin_t + Z * cos_t
+    
+    # อัปเดตค่ากลับเข้าไป
+    rotated_seq[:, ALL_X_IDX] = X_new
+    rotated_seq[:, ALL_Z_IDX] = Z_new
+    
+    return rotated_seq
+
+def temporal_masking(seq: np.ndarray, max_mask_frames: int = MAX_MASK_FRAMES) -> np.ndarray:
+    """จำลองสถานการณ์กล้องค้างหรือ CPU กระตุก (Frame Freeze)"""
+    masked_seq = seq.copy()
+    T = masked_seq.shape[0]
+    
+    if max_mask_frames <= 0: return masked_seq
+    mask_len = np.random.randint(1, max_mask_frames + 1)
+    
+    # ป้องกันไม่ให้ค้างยาวเกินไปจนทับคลิปทั้งหมด
+    if mask_len >= T - 5: 
+        mask_len = T // 3
+        
+    start_idx = np.random.randint(0, T - mask_len)
+    
+    # ให้เฟรมในช่วงที่ค้าง มีค่าเท่ากับเฟรมก่อนหน้า (เหมือนภาพค้างในวิดีโอ)
+    freeze_frame = masked_seq[start_idx]
+    for i in range(start_idx, start_idx + mask_len):
+        masked_seq[i] = freeze_frame
+        
+    return masked_seq
+
+def mediapipe_tracking_loss(seq: np.ndarray, loss_prob: float = TRACKING_LOSS_PROB) -> np.ndarray:
+    """จำลองการหลุดโฟกัสของ MediaPipe (มือซ้ายหรือมือขวาหายไปดื้อๆ)"""
+    dropped_seq = seq.copy()
+    T = dropped_seq.shape[0]
+    
+    for t in range(T):
+        if random.random() < loss_prob:
+            # สุ่มว่าจะทำมือซ้ายหรือมือขวาหายไป
+            if random.random() < 0.5:
+                dropped_seq[t, LH_START : LH_START + LH_SIZE] = 0.0
+            else:
+                dropped_seq[t, RH_START : RH_START + RH_SIZE] = 0.0
+                
+    return dropped_seq
+
 # ================== MAIN AUGMENT FOR ONE FILE ==================
 
 def augment_file(action_dir: str, fname: str, no_action_pool, is_no_action_class: bool):
@@ -304,6 +349,9 @@ def augment_file(action_dir: str, fname: str, no_action_pool, is_no_action_class
     np.save(os.path.join(action_dir, f"{base_name}_st.npy"), scale_translate(seq, SCALE_RANGE, TRANSLATE_STD))
     np.save(os.path.join(action_dir, f"{base_name}_tw.npy"), time_warp(seq, TIME_WARP_RANGE))
     np.save(os.path.join(action_dir, f"{base_name}_ps.npy"), partial_sequence(seq, PARTIAL_KEEP_RANGE))
+    np.save(os.path.join(action_dir, f"{base_name}_yaw.npy"), simulate_camera_yaw(seq, MAX_YAW_DEG))
+    np.save(os.path.join(action_dir, f"{base_name}_mask.npy"), temporal_masking(seq, MAX_MASK_FRAMES))
+    np.save(os.path.join(action_dir, f"{base_name}_tkloss.npy"), mediapipe_tracking_loss(seq, TRACKING_LOSS_PROB))
     
     if (not is_no_action_class) and no_action_pool:
         np.save(os.path.join(action_dir, f"{base_name}_psna.npy"), prefix_suffix_no_action(seq, no_action_pool))

@@ -13,6 +13,7 @@ from tensorflow.keras.layers import (
     Conv1D,
     Bidirectional,
     GRU,
+    LSTM,
     BatchNormalization,
     MaxPooling1D,
     SpatialDropout1D,
@@ -30,12 +31,12 @@ from tensorflow.keras.callbacks import (
 )
 
 # ---------------- 0) EXPERIMENT CONFIG ----------------
-EXPERIMENT_NAME = "bi-gru-v1.2.4"
+EXPERIMENT_NAME = "bi-gru-v1.2.5"
 RNN_TYPE = "gru"
 
-CONV_FILTERS = 64    
-CONV_KERNEL = 3       
-RNN_UNITS = 64       
+CONV_FILTERS = 64
+CONV_KERNEL = 3
+RNN_UNITS = 64
 DENSE_UNITS1 = 64
 BATCH_SIZE = 64
 
@@ -43,7 +44,7 @@ SPATIAL_DROPOUT_RATE = 0.5
 DROPOUT_RATE = 0.5
 
 LEARNING_RATE = 1e-3 
-NUM_EPOCHS = 300    
+NUM_EPOCHS = 100    
 
 # class balancing
 USE_BALANCED_SAMPLING = True
@@ -72,7 +73,7 @@ actions = np.array(
         "insomnia",
         "itching",
         "no_action",
-        "pain",
+        # "pain",
         "polyuria",
         "suffocated",
         "wounded",
@@ -162,6 +163,7 @@ def build_model():
         padding="same",
         kernel_regularizer=regularizers.l2(0.002),
         name="conv1d_feature",
+        use_bias=False
     )(x)
     x = BatchNormalization(name="batch_norm")(x)
     x = SpatialDropout1D(SPATIAL_DROPOUT_RATE, name="spatial_dropout")(x)
@@ -169,7 +171,7 @@ def build_model():
 
     # 3. RNN Block (Bi-GRU)
     rnn_layer_cls = GRU if RNN_TYPE.lower() == "gru" else LSTM
-    x = Bidirectional(rnn_layer_cls(RNN_UNITS, return_sequences=True), name="bi_rnn")(x)
+    x = Bidirectional(rnn_layer_cls(RNN_UNITS, return_sequences=True ,unroll=False), name="bi_rnn")(x)
 
     # 4. GlobalAveragePooling1D
     x = GlobalAveragePooling1D(name="global_avg_pool")(x)
@@ -184,7 +186,7 @@ def build_model():
     x = Dropout(DROPOUT_RATE, name="dropout_final")(x)
 
     # Output Layer
-    outputs = Dense(len(actions), activation="softmax", name="output_layer")(x)
+    outputs = Dense(len(actions), activation="softmax", dtype="float32",name="output_layer")(x)
 
     # สร้าง Model
     model = Model(inputs=inputs, outputs=outputs, name=EXPERIMENT_NAME)

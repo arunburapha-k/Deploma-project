@@ -1,12 +1,12 @@
-Samples eval: 153
+Samples eval: 92
 Overall accuracy: 1.0000
 
 Per-class (worst 3 by F1):
-  - anxiety: F1=1.000, P=1.000, R=1.000, n=15
-  - fever: F1=1.000, P=1.000, R=1.000, n=15
-  - feverish: F1=1.000, P=1.000, R=1.000, n=15
+  - anxiety: F1=1.000, P=1.000, R=1.000, n=10
+  - fever: F1=1.000, P=1.000, R=1.000, n=10
+  - feverish: F1=1.000, P=1.000, R=1.000, n=10
 
 Per-class (best 3 by F1):
-  + anxiety: F1=1.000, P=1.000, R=1.000, n=15
-  + fever: F1=1.000, P=1.000, R=1.000, n=15
-  + feverish: F1=1.000, P=1.000, R=1.000, n=15
+  + anxiety: F1=1.000, P=1.000, R=1.000, n=10
+  + fever: F1=1.000, P=1.000, R=1.000, n=10
+  + feverish: F1=1.000, P=1.000, R=1.000, n=10

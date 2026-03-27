@@ -12,7 +12,7 @@ SRC_DIR = os.path.dirname(os.path.abspath(__file__))
 STORAGE_DIR = os.path.dirname(SRC_DIR)
 MODEL_DIR = os.path.join(STORAGE_DIR, "models")
 
-TFLITE_MODEL = os.path.join(MODEL_DIR, "model_fp16.tflite")
+TFLITE_MODEL = os.path.join(MODEL_DIR, "model_int8.tflite")
 LABEL_MAP_PATH = os.path.join(MODEL_DIR, "label_map.json")
 THRESH_PATH = os.path.join(MODEL_DIR, "thresholds.json")
 
@@ -20,7 +20,7 @@ SEQ_LEN = 30
 FEAT_DIM = 258
 
 # UI / เสถียรภาพ
-PROCESS_EVERY_N = 1  # 🔥 อัปเกรด: รัน Bi-GRU ทุกๆ 5 เฟรม (Sliding Window Stride)
+PROCESS_EVERY_N = 1
 ALPHA_EMA = 0.15
 DEFAULT_THRESH = 0.70
 TOP2_MARGIN = 0.20
@@ -29,7 +29,7 @@ STABLE_FRAMES = 5
 
 CAM_INDEX = 0
 FRAME_W, FRAME_H = 1280, 720
-MODEL_COMPLEXITY = 1 # 🔥 อัปเกรด: ลดระดับ MediaPipe ลงเพื่อดึง FPS
+MODEL_COMPLEXITY = 1
 
 # ========== Utils (คงเดิม) ==========
 def nonzero_frames_ratio(seq30x258: np.ndarray) -> float:
